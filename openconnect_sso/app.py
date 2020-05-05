@@ -5,6 +5,7 @@ import logging
 import os
 import shlex
 import signal
+import sys
 from pathlib import Path
 
 import structlog
@@ -145,8 +146,8 @@ def authenticate_to(host, credentials, display_mode):
 
 async def run_openconnect(auth_info, host, args):
     command_line = [
-        "sudo",
-        "openconnect",
+        sys.executable,
+        str(Path(__file__).absolute().with_name("run_openconnect.py")),
         "--cookie",
         auth_info.session_token,
         "--servercert",
