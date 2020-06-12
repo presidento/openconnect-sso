@@ -23,10 +23,8 @@ logger = structlog.get_logger()
 
 
 def run(args):
-    configure_logger(logging.getLogger(), args.log_level)
-
     try:
-        if os.name == 'nt':
+        if os.name == "nt":
             asyncio.set_event_loop(asyncio.ProactorEventLoop())
         return asyncio.get_event_loop().run_until_complete(_run(args))
     except KeyboardInterrupt:
@@ -39,27 +37,6 @@ def run(args):
         )
     except HTTPError as exc:
         logger.error(f"Request error: {exc}")
-
-
-def configure_logger(logger, level):
-    structlog.configure(
-        processors=[
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.add_logger_name,
-            structlog.processors.format_exc_info,
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
-    )
-
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processor=structlog.dev.ConsoleRenderer()
-    )
-
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(level)
 
 
 async def _run(args):

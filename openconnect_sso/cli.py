@@ -4,11 +4,34 @@ import argparse
 import enum
 import logging
 import os
+import structlog
 import sys
 
 import openconnect_sso
 from openconnect_sso import app, config, __version__
 
+
+def configure_logger(level):
+    structlog.configure(
+        processors=[
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.format_exc_info,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+    )
+
+    formatter = structlog.stdlib.ProcessorFormatter(
+        processor=structlog.dev.ConsoleRenderer()
+    )
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logger.setLevel(level)
 
 def create_argparser():
     parser = argparse.ArgumentParser(
@@ -134,9 +157,13 @@ class LogLevel(enum.IntEnum):
         return cls.__members__.values()
 
 
-def main():
+def parse_args_and_initialize_script():
     parser = create_argparser()
     args = parser.parse_args()
+    configure_logger(args.log_level)
+    import multiprocessing_logging
+
+    multiprocessing_logging.install_mp_handler()
 
     if (args.profile_path or args.use_profile_selector) and (
         args.server or args.usergroup
@@ -158,6 +185,10 @@ def main():
             "No AnyConnect profile can be found. --profile argument is required."
         )
 
+    return args
+
+def main():
+    args = parse_args_and_initialize_script()
     return app.run(args)
 
 
